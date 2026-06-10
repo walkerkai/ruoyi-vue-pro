@@ -4,8 +4,8 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
-import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.framework.mybatis.core.query.MPJLambdaWrapperX;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import cn.iocoder.yudao.module.wms.controller.admin.inventory.vo.WmsInventoryListReqVO;
 import cn.iocoder.yudao.module.wms.controller.admin.inventory.vo.WmsInventoryPageReqVO;
 import cn.iocoder.yudao.module.wms.dal.dataobject.inventory.WmsInventoryDO;
@@ -54,7 +54,7 @@ public interface WmsInventoryMapper extends BaseMapperX<WmsInventoryDO> {
     }
 
     default List<WmsInventoryDO> selectList(WmsInventoryListReqVO reqVO) {
-        return selectList(new LambdaQueryWrapperX<WmsInventoryDO>()
+        return selectList(new LambdaQueryWrapper<WmsInventoryDO>()
                 .eq(WmsInventoryDO::getWarehouseId, reqVO.getWarehouseId())
                 .orderByAsc(WmsInventoryDO::getSkuId)
                 .orderByAsc(WmsInventoryDO::getId));
@@ -66,9 +66,8 @@ public interface WmsInventoryMapper extends BaseMapperX<WmsInventoryDO> {
     }
 
     default WmsInventoryDO selectByIdForUpdate(Long id) {
-        return selectOne(new LambdaQueryWrapperX<WmsInventoryDO>()
-                .eq(WmsInventoryDO::getId, id)
-                .last("FOR UPDATE"));
+        return selectOne(new LambdaQueryWrapper<WmsInventoryDO>()
+                .eq(WmsInventoryDO::getId, id));
     }
 
     /**
@@ -81,28 +80,28 @@ public interface WmsInventoryMapper extends BaseMapperX<WmsInventoryDO> {
         if (CollUtil.isEmpty(keys)) {
             return Collections.emptyList();
         }
-        return selectList(new LambdaQueryWrapperX<WmsInventoryDO>()
-                .and(query -> {
-                    boolean first = true;
-                    for (WmsInventoryDO key : keys) {
-                        if (!first) {
-                            query.or();
-                        }
-                        query.eq(WmsInventoryDO::getSkuId, key.getSkuId())
-                                .eq(WmsInventoryDO::getWarehouseId, key.getWarehouseId());
-                        first = false;
-                    }
-                }));
+        LambdaQueryWrapper<WmsInventoryDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w -> {
+            boolean first = true;
+            for (WmsInventoryDO key : keys) {
+                if (!first) {
+                    w.or();
+                }
+                w.eq(WmsInventoryDO::getSkuId, key.getSkuId())
+                        .eq(WmsInventoryDO::getWarehouseId, key.getWarehouseId());
+                first = false;
+            }
+        });
+        return selectList(wrapper);
     }
 
     default List<WmsInventoryDO> selectListByIdsForUpdate(Collection<Long> ids) {
         if (CollUtil.isEmpty(ids)) {
             return Collections.emptyList();
         }
-        return selectList(new LambdaQueryWrapperX<WmsInventoryDO>()
+        return selectList(new LambdaQueryWrapper<WmsInventoryDO>()
                 .in(WmsInventoryDO::getId, ids)
-                .orderByAsc(WmsInventoryDO::getId)
-                .last("FOR UPDATE"));
+                .orderByAsc(WmsInventoryDO::getId));
     }
 
     static void appendDimensionOrder(MPJLambdaWrapperX<WmsInventoryDO> query, String type) {
